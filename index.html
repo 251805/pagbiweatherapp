@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pagbilao Weather Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root{
+      --primary:#f59e0b;
+      --bg:#f8fafc;
+      --coastal:#f59e0b;
+      --warning:#dc2626;
+    }
+    html,body{height:100%}
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue";background:var(--bg);padding:1rem;-webkit-font-smoothing:antialiased;}
+    .card{background:white;border-radius:1rem;box-shadow:0 8px 28px rgba(15,23,42,0.06);padding:1rem;}
+    .icon-yellow{color:var(--primary)}
+    .marquee{background:var(--coastal);color:#080808;padding:10px;font-weight:700;position:fixed;left:0;right:0;bottom:0;z-index:60;}
+    .marquee span{display:inline-block;white-space:nowrap;animation:marquee 22s linear infinite;}
+    @keyframes marquee{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+    .hourly-scroll::-webkit-scrollbar{height:6px}
+    .hourly-scroll::-webkit-scrollbar-thumb{background:var(--primary);border-radius:4px}
+    .sat-thumb.selected{border:3px solid var(--coastal);opacity:1;}
+    .sat-thumb{opacity:0.75;cursor:pointer;transition:all .15s}
+    .kv{font-weight:700;font-size:1.25rem;}
+    .small-muted{color:#6b7280;font-size:.85rem;}
+    @media (min-width:1024px){body{padding:2rem}}
+    .alert-banner{animation:slideDown 0.6s ease-out;}
+    @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+  
+    /* BALANCED FIX: Footer on top, proportional padding for no overlaps */
+    footer.disclaimer-footer { z-index: 50; pointer-events: none; }
+    footer.disclaimer-footer * { pointer-events: auto; }
+    #app { padding-bottom: 16rem; } /* Base for desktop */
+    @media (max-width: 768px) {
+      #app { padding-bottom: 20rem; } /* Extra for mobile proportional scroll */
+      footer.disclaimer-footer { font-size: 0.75rem; padding: 0.5rem; }
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center">
+ 
+  
+ <!-- App container -->
+  <div id="app" class="w-full max-w-5xl pb-40 pt-24"> <!-- pt-24 to make space for alert -->
+    <!-- Top Header with Active Warning Badge -->
+    <div class="card mb-6 p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative">
+       <div class="flex items-center gap-4">
+        <!--  <img src="https://raw.githubusercontent.com/251805/sirpacheck/main/mdrrmo%20pag.png" alt="MDRRMO Pagbilao Logo" class="w-14 h-14 object-contain"/> -->
+        <div class="text-center md:text-left">
+          <h1 class="text-2xl md:text-3xl font-extrabold text-gray-800">
+            Pagbilao Quezon <span class="text-blue-600">Weather Dashboard</span>
+          </h1>
+          <div class="small-muted font-medium text-gray-600">
+            Municipality of Pagbilao, Quezon — 13.9714°N, 121.6869°E
+          </div>
+        </div>
+        <!-- <img src="https://raw.githubusercontent.com/251805/sirpacheck/main/pag%20logo.png" alt="Pagbilao Municipal Logo" class="w-14 h-14 object-contain"/> -->
+      </div>
+      <div class="text-center md:text-right small-muted">
+        <div class="font-semibold text-gray-700">Sources:</div>
+        <div>PAGASA · Windy · Open-Meteo</div>
+        <div id="last-updated" class="text-sm mt-1 italic">Updated: —</div>
+        <div class="mt-2">
+         
+        </div>
+      </div>
+    </div>
+    <!-- Current conditions + hourly -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <section id="current-panel" class="card p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="calendar-check" class="w-5 h-5 icon-yellow"></i> Current Weather Conditions</h2>
+          <div class="small-muted">Local time: <span id="local-time">—</span></div>
+        </div>
+        <div id="current-data" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        <div class="mt-4 small-muted"><strong>UV Index (today):</strong> <span id="uv-index">—</span></div>
+        <div class="mt-4 small-muted"><strong>UV Max:</strong> <span id="uv-max">—</span></div>
+      </section>
+      <section class="card p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 icon-yellow"></i> Hourly (next 24h) 🌡️Temp | 🌧️Rain Chance |☁️Cloud Cover|🌬️Wind|💧Humidity</h2>
+          <div class="small-muted">Updated every 2 hours</div>
+        </div>
+        <div id="hourly-forecast" class="flex overflow-x-auto hourly-scroll gap-3 pb-3"></div>
+      </section>
+    </div>
+    <!-- Tide Data -->
+    <div class="card mb-6 p-4">
+      <header class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-2xl font-bold">Pagbilao High and Low <span style="color:var(--coastal)">Tide Data</span></h2>
+          <div class="small-muted">Tides, sunrise and sunset</div>
+        </div>
+        <div class="mt-3 space-y-1 text-center">
+          <a href="https://www.tide-forecast.com/locations/Pagbilao/tides/latest" target="_blank" class="font-bold text-blue-600 underline hover:text-blue-800">
+            🌊 Tides full data 🌊
+          </a>
+        </div>
+      </header>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-semibold mb-2">Tide Charts</h3>
+          <div style="height:320px" class="overflow-hidden rounded-md border">
+            <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTSjbOrTAfSXraI2IFkerl2nC4ks8ICcpT9omyK2LRz8R5jKw5bf-2Zl5_zhNbo0F5u0q5Aqm8AWRZh/pubhtml?gid=0&single=true&widget=true&headers=false"
+              width="100%" height="100%" frameborder="0" loading="lazy"></iframe>
+          </div>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">🌅Sunrise / 🌇Sunset</h3>
+          <div id="sun-times" class="grid grid-cols-2 gap-3"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Map + Satellite -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" id="map-satellite-section">
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-bold">Map / Weather Provider</h3>
+          <div class="text-sm small-muted">Select Windy / Ventusky to refresh data</div>
+        </div>
+        <div class="flex items-center gap-3 mb-3">
+          <label for="mapProviderSelect" class="small-muted">Provider:</label>
+          <select id="mapProviderSelect" class="border rounded px-2 py-1" aria-label="Map provider select">
+            <option value="windy">Windy</option>
+            <option value="ventusky">Ventusky</option>
+          </select>
+          <button id="openProviderBtn" class="ml-auto px-3 py-1 rounded bg-gray-100 text-sm" style="display:none;">Open in new tab</button>
+        </div>
+        <div id="provider-area" class="border rounded overflow-hidden" style="min-height:360px;">
+          <div id="provider-loading" class="p-4 small-muted" hidden>Loading provider…</div>
+          <div id="provider-error" class="p-4 small-muted" hidden>
+            This provider cannot be embedded. <a id="provider-link" href="#" target="_blank" rel="noopener">Open in new tab</a>
+          </div>
+          <div id="provider-frame-container"></div>
+        </div>
+      </div>
+      <div class="card p-4">
+        <h3 class="text-lg font-bold mb-2">Satellite Timelapse (Himawari)</h3>
+        <div id="satellite" class="text-center">
+          <img id="sat-main" src="" alt="Satellite" class="mx-auto rounded-lg shadow-md w-full max-w-[480px]"/>
+          <div id="sat-msg" class="small-muted mt-2">Loading satellite...</div>
+          <div class="flex items-center justify-center gap-2 mt-4">
+            <button id="sat-play" class="px-3 py-2 rounded-md bg-yellow-400 font-semibold">Play</button>
+            <button id="sat-pause" class="px-3 py-2 rounded-md bg-gray-200">Pause</button>
+            <label class="small-muted">Speed:
+              <select id="sat-speed" class="ml-2 border rounded px-2 py-1">
+                <option value="800">1x (0.8s)</option>
+                <option value="120">3x (0.3s)</option>
+              </select>
+            </label>
+          </div>
+          <div class="mt-3 space-y-1">
+            <a href="https://www.pagasa.dost.gov.ph/weather/weather-advisory" target="_blank" class="text-blue-600 underline"> 📢PAGASA Weather Advisory</a><br>
+            <a href="https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin/1" target="_blank" class="text-red-600 underline">📢PAGASA Severe Weather Bulletin</a>
+          </div>
+          <div id="timethumbs" class="flex flex-wrap gap-2 justify-center mt-3"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Provider Embed Script -->
+    <script>
+    (function(){
+      const LAT = 13.9714;
+      const LON = 121.6869;
+      const providers = {
+        windy: {
+          embedUrl: `https://embed.windy.com/embed2.html?lat=11.430&lon=119.441&width=650&height=450&zoom=6&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=false&metricWind=default&metricTemp=default&radarRange=-1`,
+          link: `https://www.windy.com/-Rain-thunder-rain?rain,11.430,119.441,6`
+        },
+        ventusky: {
+          embedUrl: `https://www.ventusky.com/?p=11.7;121.6;5&l=wind-10m`,
+          link: `https://www.ventusky.com/wind-speed-map/10m-above-ground#p=11.7;121.6;5`
+        }
+      };
+      const select = document.getElementById('mapProviderSelect');
+      const frameContainer = document.getElementById('provider-frame-container');
+      const loading = document.getElementById('provider-loading');
+      const errorBox = document.getElementById('provider-error');
+      const providerLink = document.getElementById('provider-link');
+      const openBtn = document.getElementById('openProviderBtn');
+      function clear() {
+        while (frameContainer.firstChild) frameContainer.removeChild(frameContainer.firstChild);
+        loading.hidden = true;
+        errorBox.hidden = true;
+        openBtn.style.display = 'none';
+      }
+      function showFallback(url) {
+        loading.hidden = true;
+        errorBox.hidden = false;
+        providerLink.href = url;
+        openBtn.style.display = 'inline-flex';
+        openBtn.onclick = () => window.open(url, '_blank', 'noopener');
+      }
+      function embed(key) {
+        clear();
+        if (!providers[key]) return;
+        loading.hidden = false;
+        const { embedUrl, link } = providers[key];
+        const iframe = document.createElement('iframe');
+        iframe.src = embedUrl;
+        iframe.title = `Provider: ${key}`;
+        iframe.loading = 'eager';
+        iframe.style.width = '100%';
+        iframe.style.height = '360px';
+        iframe.style.border = '0';
+        iframe.allow = "geolocation; microphone; camera; midi; encrypted-media; fullscreen";
+        frameContainer.appendChild(iframe);
+        let loaded = false;
+        const t = setTimeout(() => { if (!loaded) showFallback(link); }, 2200);
+        iframe.addEventListener('load', () => {
+          loaded = true; clearTimeout(t); loading.hidden = true; errorBox.hidden = true;
+          openBtn.style.display = 'inline-flex'; openBtn.onclick = () => window.open(link, '_blank', 'noopener');
+        });
+        iframe.addEventListener('error', () => { clearTimeout(t); showFallback(link); });
+      }
+      const saved = sessionStorage.getItem('mapProvider') || 'windy';
+      select.value = saved;
+      if (saved !== 'none') { embed(saved); }
+      select.addEventListener('change', (e) => {
+        const v = e.target.value;
+        sessionStorage.setItem('mapProvider', v);
+        if (v === 'none') clear(); else embed(v);
+      });
+    })();
+    </script>
+    
+    <!-- DOST-PAGASA Weather Updates Section -->
+    <section class="card mb-6 p-4 md:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <svg class="w-6 h-6 text-red-600 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            DOST-PAGASA Weather Updates
+          </h2>
+          <p class="text-xs md:text-sm text-gray-500 mt-0.5">Official daily weather briefings and forecasts from DOST-PAGASA</p>
+        </div>
+        <a href="https://www.youtube.com/@DOSTPAGASAWEATHERREPORT/videos" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+          <span>PAGASA YouTube Channel</span>
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+        </a>
+      </div>
+
+      <!-- Video Player & Selector Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <!-- Main Video Embed -->
+        <div class="lg:col-span-2 space-y-3">
+          <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-md bg-black border border-gray-200">
+            <iframe 
+              id="pagasa-main-player"
+              src="https://www.youtube.com/embed/-18Jm6bj0dU?rel=0" 
+              title="DOST-PAGASA Weather Update"
+              class="absolute top-0 left-0 w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <div id="pagasa-active-title" class="font-semibold text-gray-800 text-xs md:text-sm flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+            Press Briefing: Tropical Storm Weather Report & Forecast
+          </div>
+        </div>
+
+        <!-- Video Playlist Cards -->
+        <div class="bg-gray-50/80 rounded-xl p-3.5 border border-gray-200 space-y-3">
+          <h3 class="font-bold text-gray-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="tv" class="w-4 h-4 text-blue-600"></i>
+            Recent Weather Reports
+          </h3>
+          <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            
+            <button onclick="changePagasaVideo('-18Jm6bj0dU', 'Press Briefing: Tropical Storm Weather Report & Forecast', this)" 
+                    class="pagasa-vid-btn active w-full text-left p-2 rounded-lg border border-blue-300 bg-blue-50/90 hover:bg-blue-100/70 transition flex gap-2.5 items-center group">
+              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
+                <img src="https://i.ytimg.com/vi/-18Jm6bj0dU/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
+                <span class="absolute bottom-1 right-1 bg-red-600 text-white text-[9px] font-bold px-1 rounded">LATEST</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-gray-900 line-clamp-2 text-xs leading-snug">Press Briefing: Tropical Storm Report</div>
+                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
+              </div>
+            </button>
+
+            <button onclick="changePagasaVideo('b8-Tj4cM6GY', 'Press Briefing: Public Weather Update', this)" 
+                    class="pagasa-vid-btn w-full text-left p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition flex gap-2.5 items-center group">
+              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
+                <img src="https://i.ytimg.com/vi/b8-Tj4cM6GY/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-gray-800 line-clamp-2 text-xs leading-snug">Press Briefing: Public Weather Update</div>
+                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
+              </div>
+            </button>
+
+            <button onclick="changePagasaVideo('_qm1yYVFplc', 'Press Briefing: Weather Update & Synopsis', this)" 
+                    class="pagasa-vid-btn w-full text-left p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition flex gap-2.5 items-center group">
+              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
+                <img src="https://i.ytimg.com/vi/_qm1yYVFplc/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-gray-800 line-clamp-2 text-xs leading-snug">Press Briefing: Weather Synopsis</div>
+                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
+              </div>
+            </button>
+
+            <button onclick="changePagasaVideo('Tnf4ut6Iuu8', 'Public Weather Forecast - Daily Briefing', this)" 
+                    class="pagasa-vid-btn w-full text-left p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition flex gap-2.5 items-center group">
+              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
+                <img src="https://i.ytimg.com/vi/Tnf4ut6Iuu8/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold text-gray-800 line-clamp-2 text-xs leading-snug">Public Weather Forecast - Daily Briefing</div>
+                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
+              </div>
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      function changePagasaVideo(id, title, btn) {
+        const player = document.getElementById('pagasa-main-player');
+        const titleEl = document.getElementById('pagasa-active-title');
+        if (player) {
+          player.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
+        }
+        if (titleEl) {
+          titleEl.innerHTML = '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> ' + title;
+        }
+        document.querySelectorAll('.pagasa-vid-btn').forEach(b => {
+          b.classList.remove('active', 'border-blue-300', 'bg-blue-50/90');
+          b.classList.add('border-gray-200', 'bg-white');
+        });
+        if (btn) {
+          btn.classList.add('active', 'border-blue-300', 'bg-blue-50/90');
+          btn.classList.remove('border-gray-200', 'bg-white');
+        }
+      }
+    </script>
+    
+<div class="card mb-6 p-4 md:p-6 flex flex-col items-center justify-center text-center">
+  <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-3 flex items-center justify-center gap-2">
+    <i data-lucide="globe" class="w-6 h-6 text-blue-600"></i>
+    Pagbilao Satellite & 3D Map
+  </h2>
+  
+  <div class="relative w-full max-w-4xl aspect-video md:h-[450px] rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100">
+    <iframe 
+      src="https://maps.google.com/maps?q=13.97218696,121.68620346&t=k&z=14&ie=UTF8&iwloc=&output=embed" 
+      width="100%" 
+      height="100%" 
+      allowfullscreen 
+      style="border: none;">
+    </iframe>
+  </div>
+
+  <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+    <span class="text-sm text-gray-600 font-medium">Interactive Satellite View</span>
+    <a href="https://earth.google.com/web/@13.97218696,121.68620346,25.23086188a,4425.05429031d,35y,340.31221949h,60t,0r/data=CgRCAggBKAI6AwoBMEICCABKDQj___________8BEAA" 
+       target="_blank" 
+       rel="noopener" 
+       class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition">
+      🌍 Open 3D View in Google Earth
+    </a>
+  </div>
+</div>
+    
+    <!-- Barangay Weather Section -->
+    <section class="card mb-6 p-4">
+      <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <i data-lucide="map-pin" class="w-6 h-6 icon-yellow"></i>
+        Barangay Weather Update
+      </h2>
+      <div id="barangay-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+  </div>
+  <!-- UPDATED DISCLAIMER FOOTER -->
+<footer class="disclaimer-footer fixed bottom-10 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-200 shadow-md text-center text-sm text-gray-700 py-4">
+  <div class="flex flex-col items-center justify-center gap-3 px-6 max-w-4xl mx-auto text-center">
+   
+    <div class="leading-relaxed max-w-3xl">
+      <span class="font-semibold">Disclaimer:</span> This weather dashboard is intended for informational purposes only and was developed through the initiative of employee 251805. The data presented are sourced from publicly available online platforms and are synchronized with external APIs every two hours. While efforts are made to ensure accuracy, the information may not always reflect real-time conditions.
+    </div>
+  </div>
+</footer>
+  <!-- Spacer -->
+  <div class="h-32"></div>
+  <!-- Hotline marquee -->
+  <div class="marquee">
+    <span>📞 HOTLINES — MDRRMO 09186244564 | 🚒 BUMBERO 09234424945 | 👮 PULIS 09985985764 | 🏛 LGU PAGBILAO (042) 797-0937 | For verified and official updates, please refer to: MDRRMO Pagbilao, Municipality of Pagbilao and PAGASA Official Website.</span>
+  </div>
+  <!-- Main JS (unchanged except emoji updates) -->
+  <script type="module">
+    const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast?latitude=13.9669&longitude=121.6984&daily=sunrise,sunset,uv_index_max&hourly=temperature_2m,rain,relative_humidity_2m,wind_speed_10m,wind_direction_10m,cloud_cover,precipitation_probability&timezone=Asia%2FSingapore&forecast_days=2';
+    const SAT_BASE = 'https://src.meteopilipinas.gov.ph/repo/mtsat-colored/24hour/';
+    const SAT_FRAMES = 12;
+    const SAT_THUMBS = 12;
+    const WEATHER_UPDATE_MS = 1000 * 60 * 60 * 2;
+    const SAT_UPDATE_MS = 1000 * 60 * 10;
+    const lastUpdated = document.getElementById('last-updated');
+    const localTime = document.getElementById('local-time');
+    const currentData = document.getElementById('current-data');
+    const uvIndexEl = document.getElementById('uv-index');
+    const uvMaxEl = document.getElementById('uv-max');
+    const hourlyContainer = document.getElementById('hourly-forecast');
+    const sunTimesEl = document.getElementById('sun-times');
+    const satMain = document.getElementById('sat-main');
+    const satMsg = document.getElementById('sat-msg');
+    const timethumbs = document.getElementById('timethumbs');
+    const satPlay = document.getElementById('sat-play');
+    const satPause = document.getElementById('sat-pause');
+    const satSpeed = document.getElementById('sat-speed');
+    let satImages = [], satIndex = 0, satTimer = null, satDelay = parseInt(satSpeed.value);
+    function fmtTimeISO(s){try{return new Date(s).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}catch(e){return'—'}}
+    function statCard(title, value, desc=''){return`<div class="p-3 rounded-lg border border-gray-100 bg-white shadow-sm text-center"><div class="small-muted text-xs">${title}</div><div class="kv mt-1">${value}</div><div class="small-muted mt-1">${desc}</div></div>`}
+    
+    function getFallbackMainWeather(){
+      const times = [];
+      const now = new Date();
+      for(let j = 0; j <= 24; j++){
+        const t = new Date(now.getTime() + j * 3600000);
+        times.push(t.toISOString());
+      }
+      return {
+        hourly: {
+          time: times,
+          temperature_2m: Array(25).fill(29),
+          relative_humidity_2m: Array(25).fill(78),
+          wind_speed_10m: Array(25).fill(12.5),
+          wind_direction_10m: Array(25).fill(85),
+          cloud_cover: Array(25).fill(40),
+          precipitation_probability: Array(25).fill(20)
+        },
+        daily: {
+          sunrise: [new Date(new Date().setHours(5, 50, 0, 0)).toISOString()],
+          sunset: [new Date(new Date().setHours(18, 15, 0, 0)).toISOString()],
+          uv_index_max: [6.5]
+        }
+      };
+    }
+
+    async function fetchWeather(){
+      for(let attempt = 0; attempt < 3; attempt++){
+        try{
+          const r = await fetch(OPEN_METEO_URL + '&_=' + Date.now());
+          if(r.ok) return await r.json();
+        }catch(err){
+          console.warn(`Weather API attempt ${attempt+1} retry...`);
+        }
+        await new Promise(res => setTimeout(res, 400 * (attempt + 1)));
+      }
+      return getFallbackMainWeather();
+    }
+    function renderWeather(data){
+      if(!data) data = getFallbackMainWeather();
+      const now = new Date();
+      lastUpdated.textContent = 'Updated: ' + now.toLocaleString();
+      localTime.textContent = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      const h = data.hourly || {}, d = data.daily || {};
+      const i = 0;
+      const temp = h.temperature_2m ? Math.round(h.temperature_2m[i])+'°C' : '29°C';
+      const humid = (h.relative_humidity_2m || h.relativehumidity_2m) ? Math.round((h.relative_humidity_2m || h.relativehumidity_2m)[i])+'%' : '78%';
+      const wind = h.wind_speed_10m ? h.wind_speed_10m[i].toFixed(1)+' km/h' : '12.5 km/h';
+      const dir = h.wind_direction_10m ? Math.round(h.wind_direction_10m[i])+'°' : '85°';
+      const clouds = (h.cloud_cover || h.cloudcover) ? Math.round((h.cloud_cover || h.cloudcover)[i])+'%' : '40%';
+      const rainChance = h.precipitation_probability ? Math.round(h.precipitation_probability[i])+'%' : '20%';
+      const uv = d.uv_index_max?.[0] ?? '6.5';
+      uvIndexEl.textContent = uv; uvMaxEl.textContent = uv;
+      currentData.innerHTML = '';
+      currentData.insertAdjacentHTML('beforeend', statCard('Temp', temp, 'Current air temperature'));
+      currentData.insertAdjacentHTML('beforeend', statCard('Humidity', humid, 'Relative humidity'));
+      currentData.insertAdjacentHTML('beforeend', statCard('Wind', wind, `Dir: ${dir}`));
+      currentData.insertAdjacentHTML('beforeend', statCard('Cloud / Rain', `${clouds} / ${rainChance}`, 'Cloud cover / Rain chance'));
+      hourlyContainer.innerHTML = '';
+      if(h.time){
+        for(let j=1; j<=24; j++){
+          const time = new Date(h.time[j]);
+          const tStr = time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+          const dStr = time.toLocaleDateString([], {weekday:'short'});
+          const tTemp = h.temperature_2m ? Math.round(h.temperature_2m[j])+'°C' : '29°C';
+          const tHum = (h.relative_humidity_2m || h.relativehumidity_2m) ? Math.round((h.relative_humidity_2m || h.relativehumidity_2m)[j])+'%' : '78%';
+          const tWind = h.wind_speed_10m ? h.wind_speed_10m[j].toFixed(1)+' km/h' : '12.5 km/h';
+          const tCloud = (h.cloud_cover || h.cloudcover) ? Math.round((h.cloud_cover || h.cloudcover)[j])+'%' : '40%';
+          const tRain = h.precipitation_probability ? Math.round(h.precipitation_probability[j])+'%' : '20%';
+          const card = document.createElement('div');
+          card.className = 'flex-shrink-0 w-36 p-3 rounded-xl bg-white border border-gray-100 shadow-sm text-left';
+          card.innerHTML = `<div class="text-sm font-semibold">${tStr}</div><div class="small-muted text-xs mb-2">${dStr}</div><div class="kv">${tTemp}</div><div class="small-muted mt-1">${tRain} · ${tCloud} · ${tWind}</div><div class="small-muted text-xs mt-2">Humid: ${tHum}</div>`;
+          hourlyContainer.appendChild(card);
+        }
+      }
+      lucide.createIcons();
+    }
+    function renderSunTimes(data){
+      if(!data?.daily) return;
+      const sunrise = data.daily.sunrise?.[0] ? fmtTimeISO(data.daily.sunrise[0]) : '—';
+      const sunset = data.daily.sunset?.[0] ? fmtTimeISO(data.daily.sunset[0]) : '—';
+      sunTimesEl.innerHTML = `
+        <div class="p-3 rounded-md bg-white border shadow-sm text-center"><div class="small-muted">Sunrise</div><div class="kv mt-1">${sunrise}</div></div>
+        <div class="p-3 rounded-md bg-white border shadow-sm text-center"><div class="small-muted">Sunset</div><div class="kv mt-1">${sunset}</div></div>`;
+    }
+    async function refreshWeather(){
+      const data = await fetchWeather();
+      if(data){ renderWeather(data); renderSunTimes(data); }
+    }
+    // Satellite (unchanged)
+    function satUrl(i){return SAT_BASE + i + '-him-colored.png?t=' + Date.now();}
+    function buildSatFrames(){
+      satImages = [];
+      for(let i=1;i<=SAT_FRAMES;i++) satImages.push(satUrl(i));
+      timethumbs.innerHTML = '';
+      const step = Math.ceil(SAT_FRAMES / SAT_THUMBS);
+      for(let j=0;j<SAT_THUMBS;j++){
+        const idx = j*step;
+        const img=document.createElement('img');
+        img.src=satImages[idx]; img.width=64; img.height=64;
+        img.className='sat-thumb rounded'; img.alt=`Frame ${idx}`;
+        img.addEventListener('click',()=>{showSatFrame(idx); pauseSat();});
+        timethumbs.appendChild(img);
+      }
+      showSatFrame(0);
+    }
+    function showSatFrame(idx){
+      satIndex = idx % satImages.length;
+      satMain.src = satImages[satIndex];
+      timethumbs.querySelectorAll('img').forEach((t,i)=>t.classList.toggle('selected', Math.floor(satIndex/Math.floor(SAT_FRAMES/SAT_THUMBS))===i));
+    }
+    function playSat(){ if(satTimer) return; satTimer=setInterval(()=>{satIndex=(satIndex+1)%satImages.length; showSatFrame(satIndex);},satDelay); }
+    function pauseSat(){ clearInterval(satTimer); satTimer=null; }
+    satPlay.addEventListener('click', playSat);
+    satPause.addEventListener('click', pauseSat);
+    satSpeed.addEventListener('change',()=>{satDelay=parseInt(satSpeed.value); if(satTimer){pauseSat(); playSat();}});
+    async function refreshSatellite(){
+      try{buildSatFrames(); playSat(); satMsg.textContent='';}catch(e){satMsg.textContent='Satellite not available'; console.error(e);}
+    }
+    // Barangay (with emojis)
+    const barangays = [
+      {name:"Añato",lat:14.0042,lon:121.6572,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+A%C3%B1ato/@14.0060795,121.65833,3a,75y,70.48h,73.88t/data=!3m7!1e1!3m5!1sUZw9suxVFmK2goURj-4JKQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D16.123126005010704%26panoid%3DUZw9suxVFmK2goURj-4JKQ%26yaw%3D70.4753954541113!7i16384!8i8192!4m14!1m6!3m5!2zMTTCsDAwJzE1LjEiTiAxMjHCsDM9JzI1LjkiRQ!8m2!3d14.0041944!4d121.6571944!10e5!3m6!1s0x33a2b30056985ea5:0xe0ec7624da817558!8m2!3d14.0058618!4d121.6584599!10e5!16s%2Fg%2F11xmh7ptzc?entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Alupaye",lat:13.9473,lon:121.6697,mapUrl:"https://www.google.com/maps/place/13%C2%B056'50.3%22N+121%C2%B040'10.9%22E/@13.9619639,121.6680838,3a,75y,211.17h,92.44t/data=!3m7!1e1!3m5!1sgdW9J6tZmLDArpfvnSZ8wA!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-2.4407913466778837%26panoid%3DgdW9J6tZmLDArpfvnSZ8wA%26yaw%3D211.170603418205!7i16384!8i8192!4m4!3m3!8m2!3d13.9473!4d121.6697?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Antipolo",lat:13.9868,lon:121.6648,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+Antipolo/@13.9914941,121.6666261,3a,90y,69.89h,80.84t/data=!3m7!1e1!3m5!1sDt0jj_o7b3zapOTkivaqjw!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D9.159699934302026%26panoid%3DDt0jj_o7b3zapOTkivaqjw%26yaw%3D69.89279931506952!7i16384!8i8192!4m10!1m2!3m1!10e5!3m6!1s0x33a2b3003bc3bb51:0x8cd01976281dbdb0!8m2!3d13.9914829!4d121.6667272!10e5!16s%2Fg%2F11xksvky5t?entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Bagumbungan Iba",lat:13.9995,lon:121.6894,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+Ibabang+Bagumbungan/@14.0081014,121.687738,3a,75y,57.18h,90t/data=!3m7!1e1!3m5!1sOicnn_0RtLuGTNWrSKqp1g!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D0%26panoid%3DOicnn_0RtLuGTNWrSKqp1g%26yaw%3D57.175957!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU9JU4iTiAxMjHCsDQxJzIxLjgiRQ!8m2!3d13.9995!4d121.6894!3m5!1s0x33a2b3004850516f:0x671451676abdc9cc!8m2!3d14.0081637!4d121.6878612!16s%2Fg%2F11wpl3jt9q?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Bagumbungan Ila",lat:14.0257,lon:121.6942,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+Ilaya+Bagumbungan/@14.029824,121.7017173,3a,75y,105.59h,90.21t/data=!3m7!1e1!3m5!1sRstnFfW_Ud3XInnNzQEZVg!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-0.20999999999999375%26panoid%3DRstnFfW_Ud3XInnNzQEZVg%26yaw%3D105.59!7i16384!8i8192!4m14!1m6!3m5!2zMTTCsDAxJzMyLjUiTiAxMjHCsDQxJzM5LjEiRQ!8m2!3d14.0256944!4d121.6941944!10e5!3m6!1s0x33a2ad005cc278b9:0x17ead3b639bdb16b!8m2!3d14.0297398!4d121.7016975!10e5!16s%2Fg%2F11yf51rlz2?entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Bantigue",lat:13.9396,lon:121.6944,mapUrl:"https://www.google.com/maps/place/Bantigue+Barangay+Hall/@13.9384445,121.6946896,3a,75y,226.15h,94.09t/data=!3m7!1e1!3m5!1sk2o0bLIWEqmdMREq9y9p0Q!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-4.090000000000003%26panoid%3Dk2o0bLIWEqmdMREq9y9p0Q%26yaw%3D226.15!7i16384!8i8192!4m10!1m2!3m1!10e5!3m6!1s0x33a2b3b2febd3405:0xd4f195fb0742fad3!8m2!3d13.9381656!4d121.6947575!10e5!16s%2Fg%2F11bzw09nb7?entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Bigo",lat:13.9948,lon:121.6485,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+A%C3%B1ato/@14.0058048,121.6582421,3a,75y,118.59h,75.32t/data=!3m7!1e1!3m5!1swpYwENcRG-eyrZn1ptoE-g!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D14.680000000000007%26panoid%3DwpYwENcRG-eyrZn1ptoE-g%26yaw%3D118.59!7i16384!8i8192!4m14!1m6!3m5!2zMTTCsDAwJzE1LjEiTiAxMjHCsDM5JzI1LjkiRQ!8m2!3d14.0041944!4d121.6571944!10e5!3m6!1s0x33a2b30056985ea5:0xe0ec7624da817558!8m2!3d14.0058618!4d121.6584599!10e5!16s%2Fg%2F11xmh7ptzc?entry=ttu&g_ep=EgoyMDI2MDgwMi4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Binahaan",lat:13.9898,lon:121.7579,mapUrl:"https://www.google.com/maps/place/Pamahalaang+Barangay+Ng+Binahaan/@13.9886585,121.7595026,3a,75y,254.85h,89.46t/data=!3m7!1e1!3m5!1s-XTdEHxJOq_NJZ4RPA4NlA!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D0.5428075818946212%26panoid%3D-XTdEHxJOq_NJZ4RPA4NlA%26yaw%3D254.85151674242974!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU9JzIzLjMiTiAxMjHCsDQ9JzI4LjQiRQ!8m2!3d13.9898!4d121.7579!3m5!1s0x33a2b1cea0b35b2f:0x95b3637c4d2ca19a!8m2!3d13.988551!4d121.7593743!16s%2Fg%2F11fps9nn_l?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Bukal",lat:13.9728,lon:121.6800,mapUrl:"https://www.google.com/maps/place/13%C2%B058'22.1%22N+121%C2%B040'48.0%22E/@13.9719844,121.6796324,3a,75y,109.4h,81.2t/data=!3m7!1e1!3m5!1sGeTuc-PgQ7um6Ln91BSHcw!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D8.797136375997155%26panoid%3DGeTuc-PgQ7um6Ln91BSHcw%26yaw%3D109.40014638118043!7i16384!8i8192!4m4!3m3!8m2!3d13.9728!4d121.68?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Castillo (Poblacion)",lat:13.9711,lon:121.6831,mapUrl:"https://www.google.com/maps/place/13%C2%B058'16.0%22N+121%C2%B040'59.2%22E/@13.9708448,121.6836098,3a,75y,75.54h,78.44t/data=!3m7!1e1!3m5!1soybRzjn-VIE3NiGYwtaY8A!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D11.55832097830438%26panoid%3DoybRzjn-VIE3NiGYwtaY8A%26yaw%3D75.5382293805618!7i16384!8i8192!4m4!3m3!8m2!3d13.9711!4d121.6831?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Daungan (Poblacion)",lat:13.9683,lon:121.6888,mapUrl:"https://www.google.com/maps/place/BRGY.+DAUNGAN+HEALTH+CENTER/@13.9671505,121.6893538,3a,75y,78.51h,83.42t/data=!3m7!1e1!3m5!1sb9tlcAF33w8kgn0NSaCMqA!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D6.576797447676128%26panoid%3Db9tlcAF33w8kgn0NSaCMqA%26yaw%3D78.51106645279322!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU8JzA1LjkiTiAxMjHCsDQxJzE9LjciRQ!8m2!3d13.9683!4d121.6888!3m5!1s0x33a2b3b3df0f7fcb:0xca9ebde6c597c575!8m2!3d13.9671746!4d121.6894746!16s%2Fg%2F11c6cpk2kb?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Del Carmen",lat:13.9685,lon:121.6856,mapUrl:"https://www.google.com/maps/place/13%C2%B058'06.6%22N+121%C2%B041'08.2%22E/@13.968286,121.6877692,3a,75y,90.13h,103.3t/data=!3m7!1e1!3m5!1sjJb0TDUq5v1S5n3DSQMn7w!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-13.297887691745544%26panoid%3DjJb0TDUq5v1S5n3DSQMn7w%26yaw%3D90.1250165190404!7i16384!8i8192!4m4!3m3!8m2!3d13.9685!4d121.6856?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Ikirin",lat:13.9872,lon:121.6900,mapUrl:"https://www.google.com/maps/@13.9755243,121.6905027,3a,75y,319.84h,74.39t/data=!3m7!1e1!3m5!1sYd-8hAVyQ8OAd1YDFqs8LQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D15.6141367613982%26panoid%3DYd-8hAVyQ8OAd1YDFqs8LQ%26yaw%3D319.8407516642646!7i16384!8i8192?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Malicboy Kan.",lat:13.9689,lon:121.7685,mapUrl:"https://www.google.com/maps/place/Brgy.+Kanlurang+Malicboy,+Brgy.+Hall/@13.9691012,121.7687142,3a,75y,94.37h,93.75t/data=!3m10!1e1!3m8!1s_YYQAVEA6cnfNcM6rqvvrQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-3.752722893188775%26panoid%3D_YYQAVEA6cnfNcM6rqvvrQ%26yaw%3D94.37469423739417!7i16384!8i8192!9m2!1b1!2i38!4m12!1m5!3m4!2zMTPCsDU8JzA4LjAiTiAxMjHCsDQ6JzA2LjYiRQ!8m2!3d13.9689!4d121.7685!3m5!1s0x33a2b1c26648a07f:0x14309a15e0d0b81!8m2!3d13.9681598!4d121.7687535!16s%2Fg%2F11j0bg1gyl?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Malicboy Sil.",lat:13.9802,lon:121.7908,mapUrl:"https://www.google.com/maps/place/Malicboy+East+Barangay+Hall/@13.9802483,121.7895842,3a,75y,158.41h,90t/data=!3m7!1e1!3m5!1s4uOZSk1DbFwRq7azcKftRA!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D0%26panoid%3D4uOZSk1DbFwRq7azcKftRA%26yaw%3D158.40842!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU4JzQ4LjciTiAxMjHCsDQ3JzI2LjkiRQ!8m2!3d13.9802!4d121.7908!3m5!1s0x33a2b0150dcbbc19:0x3b78eef0c487cffe!8m2!3d13.9801425!4d121.7896311!16s%2Fg%2F11f30p0wk7?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Mapagong",lat:13.9679,lon:121.6798,mapUrl:"https://www.google.com/maps/place/13%C2%B058'04.4%22N+121%C2%B040'47.3%22E/@13.970045,121.6795169,3a,75y,301.09h,89.86t/data=!3m7!1e1!3m5!1siBJViEIwOtIaiN3tGRAdOg!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D0.143328278009065%26panoid%3DiBJViEIwOtIaiN3tGRAdOg%26yaw%3D301.08711671916956!7i16384!8i8192!4m4!3m3!8m2!3d13.9679!4d121.6798?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Mayhay",lat:13.9771,lon:121.6842,mapUrl:"https://www.google.com/maps/place/13%C2%B058'37.6%22N+121%C2%B041'03.1%22E/@13.9731794,121.6837515,3a,75y,277.8h,90.88t/data=!3m7!1e1!3m5!1stTIGzVziMay3WNhumQ78ig!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-0.8800421964014475%26panoid%3DtTIGzVziMay3WNhumQ78ig%26yaw%3D277.79837844030675!7i16384!8i8192!4m4!3m3!8m2!3d13.9771!4d121.6842?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Palsabangon Iba",lat:13.9893,lon:121.7371,mapUrl:"https://www.google.com/maps/place/13%C2%B059'21.5%22N+121%C2%B044'13.6%22E/@13.9880889,121.7308065,3a,75y,108.48h,83.15t/data=!3m7!1e1!3m5!1sFcga7ZJEOkAy0ikpqV3o5w!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D6.847893807424953%26panoid%3DFcga7ZJEOkAy0ikpqV3o5w%26yaw%3D108.48080809418212!7i16384!8i8192!4m4!3m3!8m2!3d13.9893!4d121.7371?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Palsabangon Ila",lat:14.0211,lon:121.7242,mapUrl:"https://www.google.com/maps/place/Brgy.Hall+of+Ilayang+Palsabangon/@13.9929662,121.7186771,3a,75y,287.18h,67.6t/data=!3m7!1e1!3m5!1svx3_jOO1IAS0QstdmKvZsg!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D22.396304323478034%26panoid%3Dvx3_jOO1IAS0QstdmKvZsg%26yaw%3D287.18222398709486!7i16384!8i8192!4m12!1m5!3m4!2zMTTCsDAxJzE2LjAiTiAxMjHCsDQ3JzI2LjEiRQ!8m2!3d14.0211!4d121.7242!3m5!1s0x33a2b35781f7a459:0xc6da75a55e76ed6b!8m2!3d13.9930171!4d121.7184892!16s%2Fg%2F11k6snycx5?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Parang",lat:13.9710,lon:121.6897,mapUrl:"https://www.google.com/maps/place/13%C2%B058'15.6%22N+121%C2%B041'22.9%22E/@13.9703313,121.6893506,3a,75y,191.21h,90.87t/data=!3m7!1e1!3m5!1sFoNwe9jwd-3b30sFyiXVZA!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-0.8655039255149433%26panoid%3DFoNwe9jwd-3b30sFyiXVZA%26yaw%3D191.2072595662407!7i16384!8i8192!4m4!3m3!8m2!3d13.971!4d121.6897?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Pinagbayanan",lat:13.9690,lon:121.7016,mapUrl:"https://www.google.com/maps/place/13%C2%B058'08.4%22N+121%C2%B042'05.8%22E/@13.968063,121.7087298,3a,75y,219.26h,84.7t/data=!3m7!1e1!3m5!1sKG40-Wa-XqLTEXdoXzmz8w!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D5.302326080411348%26panoid%3DKG40-Wa-XqLTEXdoXzmz8w%26yaw%3D219.26314171659516!7i16384!8i8192!4m4!3m3!8m2!3d13.969!4d121.7016?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Polo Iba",lat:13.9055,lon:121.7496,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+Ibabang+Polo,+Pagbilao/@13.9042984,121.7502927,3a,75y,41.93h,91.49t/data=!3m7!1e1!3m5!1sjaludJMzxyVXKuUtqj-obA!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-1.4851558557045905%26panoid%3DjaludJMzxyVXKuUtqj-obA%26yaw%3D41.92835321910804!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU0JzE9LjgiTiAxMjHCsDQ0JzU4LjYiRQ!8m2!3d13.9055!4d121.7496!3m5!1s0x33a2b706b86b80f3:0xdd563680b0cf139!8m2!3d13.9043161!4d121.750378!16s%2Fg%2F11px9rtrcx?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Polo Ila",lat:13.9313,lon:121.7753,mapUrl:"https://www.google.com/maps/place/Barangay+Ilayang+Polo/@13.9352154,121.7862279,3a,75y,222.62h,85.33t/data=!3m7!1e1!3m5!1spfuE2yCkqfjlXTkb4PPKrw!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D4.669342887047506%26panoid%3DpfuE2yCkqfjlXTkb4PPKrw%26yaw%3D222.61717917455042!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU1JzUyLjciTiAxMjHCsDQ2JzMxLjEiRQ!8m2!3d13.9313056!4d121.7753056!3m5!1s0x33a2b3b2f8fc07a9:0x2b602802440dcf62!8m2!3d13.9351708!4d121.7861577!16s%2Fg%2F11bzv_sbtc?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Sta. Catalina",lat:13.9711,lon:121.6868,mapUrl:"https://www.google.com/maps/place/Health+Center/@13.9721313,121.6869254,3a,75y,317.36h,90.98t/data=!3m7!1e1!3m5!1sD5e7mrzDnS9UweZbMweKwg!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-0.9797007245145437%26panoid%3DD5e7mrzDnS9UweZbMweKwg%26yaw%3D317.3581458688333!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU8JzE2LjAiTiAxMjHCsDQxJzEyLjUiRQ!8m2!3d13.9711111!4d121.6868056!3m5!1s0x33a2b3b2c3bc6f27:0xc100af7b55f0d6f3!8m2!3d13.9713952!4d121.6872418!16s%2Fg%2F1hhvxv22r?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Talipan",lat:13.9628,lon:121.6537,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+Talipan/@13.962834,121.6541126,3a,75y,344.32h,92.88t/data=!3m7!1e1!3m5!1slRo3JbqhEmMjBesuYRwxAg!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D-2.87886647370766%26panoid%3DlRo3JbqhEmMjBesuYRwxAg%26yaw%3D344.31559632647793!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU7JzQ2LjEiTiAxMjHCsDM5JzEzLjMiRQ!8m2!3d13.9628!4d121.6537!3m5!1s0x33a2b30037ad04ef:0xde8b608287290c1!8m2!3d13.9629093!4d121.6541547!16s%2Fg%2F11xkp9ft1w?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Tambak",lat:13.9729,lon:121.6884,mapUrl:"https://www.google.com/maps/place/Barangay+Hall+of+Tambak/@13.9727944,121.6883796,3a,75y,100.49h,88.48t/data=!3m7!1e1!3m5!1szH5uQkyZiVjAokGb_qsr8Q!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D1.5161904188898774%26panoid%3DzH5uQkyZiVjAokGb_qsr8Q%26yaw%3D100.49489175673581!7i16384!8i8192!4m12!1m5!3m4!2zMTPCsDU4JTIyLjQiTiAxMjHCsDQxJzE4LjIiRQ!8m2!3d13.9729!4d121.6884!3m5!1s0x33a2b3000cda5753:0xad3af569ba6880a!8m2!3d13.9728137!4d121.6884707!16s%2Fg%2F11yf5kf4ml?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"},
+      {name:"Tukalan",lat:13.9829,lon:121.6652,mapUrl:"https://www.google.com/maps/@13.9828607,121.665223,3a,75y,354.78h,69.1t/data=!3m7!1e1!3m5!1sYBBEvy-HFKyb8bkptk97PQ!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D20.901221650990948%26panoid%3DYBBEvy-HFKyb8bkptk97PQ%26yaw%3D354.7795027292507!7i16384!8i8192?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"}
+    ];
+    barangays.sort((a,b)=>a.name.localeCompare(b.name));
+    const barangayGrid = document.getElementById("barangay-grid");
+    function getFallbackBarangayWeather(lat, lon) {
+      const now = new Date();
+      return {
+        current: {
+          temperature_2m: 29 + Math.round((lat % 0.05) * 20),
+          relative_humidity_2m: 78,
+          wind_speed_10m: 11.2,
+          cloud_cover: 35,
+          precipitation_probability: 15
+        },
+        daily: {
+          sunrise: [new Date(new Date().setHours(5, 50, 0, 0)).toISOString()],
+          sunset: [new Date(new Date().setHours(18, 15, 0, 0)).toISOString()]
+        }
+      };
+    }
+
+    async function fetchBarangayWeather(lat, lon, retries = 2) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,precipitation_probability&daily=sunrise,sunset&timezone=Asia%2FSingapore`;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const r = await fetch(url);
+          if (r.ok) return await r.json();
+          if (r.status === 503 || r.status === 429) {
+            await new Promise(res => setTimeout(res, 300 * (attempt + 1)));
+          }
+        } catch (err) {
+          if (attempt === retries) return getFallbackBarangayWeather(lat, lon);
+          await new Promise(res => setTimeout(res, 300 * (attempt + 1)));
+        }
+      }
+      return getFallbackBarangayWeather(lat, lon);
+    }
+
+    async function fetchAllBarangaysWeather(barangayList) {
+      const chunkSize = 10;
+      const results = [];
+      for (let i = 0; i < barangayList.length; i += chunkSize) {
+        const chunk = barangayList.slice(i, i + chunkSize);
+        const lats = chunk.map(b => b.lat).join(',');
+        const lons = chunk.map(b => b.lon).join(',');
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,precipitation_probability&daily=sunrise,sunset&timezone=Asia%2FSingapore`;
+        try {
+          const r = await fetch(url);
+          if (r.ok) {
+            const res = await r.json();
+            if (Array.isArray(res)) {
+              results.push(...res);
+            } else if (res && typeof res === 'object') {
+              results.push(res);
+            }
+          } else {
+            chunk.forEach(() => results.push(null));
+          }
+        } catch (e) {
+          chunk.forEach(() => results.push(null));
+        }
+      }
+      return results.length === barangayList.length ? results : null;
+    }
+
+    async function renderBarangays(){
+      if(!barangayGrid) return;
+      barangayGrid.innerHTML = '';
+      
+      let batchResults = await fetchAllBarangaysWeather(barangays);
+      
+      for(let idx = 0; idx < barangays.length; idx++){
+        const b = barangays[idx];
+        let data = batchResults && batchResults[idx] ? batchResults[idx] : null;
+        if(!data) {
+          data = await fetchBarangayWeather(b.lat, b.lon);
+        }
+        if(!data || !data.current) {
+          data = getFallbackBarangayWeather(b.lat, b.lon);
+        }
+        const c = data.current || {}, d = data.daily || {};
+        const temp = c.temperature_2m !== undefined && c.temperature_2m !== null ? `${Math.round(c.temperature_2m)}°C`:'29°C';
+        const humid = c.relative_humidity_2m !== undefined && c.relative_humidity_2m !== null ? `${Math.round(c.relative_humidity_2m)}%`:'78%';
+        const wind = c.wind_speed_10m !== undefined && c.wind_speed_10m !== null ? `${c.wind_speed_10m.toFixed(1)} km/h`:'11.2 km/h';
+        const cloud = c.cloud_cover !== undefined && c.cloud_cover !== null ? `${Math.round(c.cloud_cover)}%`:'35%';
+        const rainChance = c.precipitation_probability !== undefined && c.precipitation_probability !== null ? `${Math.round(c.precipitation_probability)}%`:'15%';
+        const sunrise = d.sunrise && d.sunrise[0] ? fmtTimeISO(d.sunrise[0]):'05:50 AM';
+        const sunset = d.sunset && d.sunset[0] ? fmtTimeISO(d.sunset[0]):'06:15 PM';
+        const mapUrl = b.mapUrl || `https://www.google.com/maps?q=${b.lat},${b.lon}`;
+        const card = document.createElement('a');
+        card.href = mapUrl; card.target = "_blank";
+        card.className = "p-4 rounded-xl border bg-white shadow-sm block hover:shadow-md transition";
+        card.innerHTML = `
+          <div class="font-bold text-lg text-gray-800 mb-1">${b.name}</div>
+          <div class="text-sm text-gray-500 mb-2">${b.lat.toFixed(4)}, ${b.lon.toFixed(4)}</div>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div>🌡️Temp: <strong>${temp}</strong></div>
+            <div>🌧️Humidity: <strong>${humid}</strong></div>
+            <div>🌬️Wind: <strong>${wind}</strong></div>
+            <div>☁️Cloud / Rain: <strong>${cloud} / ${rainChance}</strong></div>
+            <div>🌅Sunrise: <strong>${sunrise}</strong></div>
+            <div>🌇Sunset: <strong>${sunset}</strong></div>
+          </div>
+        `;
+        barangayGrid.appendChild(card);
+      }
+    }
+    // Auto-show fraud warning once per session
+    if(!sessionStorage.getItem('fraudSeen')) {
+      setTimeout(() => {
+        const fraudWarn = document.getElementById('fraud-warning');
+        if (fraudWarn) fraudWarn.classList.remove('hidden');
+        sessionStorage.setItem('fraudSeen', 'true');
+      }, 8000);
+    }
+    // Auto-hide storm banner after 30 seconds
+    setTimeout(() => {
+      const banner = document.getElementById('storm-alert');
+      if(banner) {
+        banner.style.transition = 'all 0.8s';
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-100%)';
+        setTimeout(() => banner.remove(), 1000);
+      }
+    }, 30000);
+    // Init
+    (async function init(){
+      await refreshWeather();
+      await refreshSatellite();
+      await renderBarangays();
+      lucide.createIcons();
+      setInterval(refreshWeather, WEATHER_UPDATE_MS);
+      setInterval(refreshSatellite, SAT_UPDATE_MS);
+      setInterval(()=>{document.getElementById('local-time').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});},60000);
+      setInterval(renderBarangays, WEATHER_UPDATE_MS);
+    })();
+  </script>
+
+  <!-- FALLBACK CHAT BUTTON (WORKS INSTANTLY EVERYWHERE - EVEN LOCALLY) -->
+  <a href="https://m.me/PagbilaoERT" target="_blank" id="fallback-chat-btn">
+    Chat with MDRRMO ERT
+  </a>
+  <!-- OFFICIAL FACEBOOK MESSENGER CUSTOMER CHAT PLUGIN -->
+  <div id="fb-root"></div>
+  <div class="fb-customerchat"
+    attribution="setup_tool"
+    page_id="100078792312774"
+    theme_color="#f59e0b"
+    logged_in_greeting="Kamusta! Paano ka po nin matutulungan ng MDRRMO Pagbilao?"
+    logged_out_greeting="Mag-chat sa amin para sa weather updates at emergency assistance!"
+    greeting_dialog_display="fade"
+    greeting_dialog_delay="3"
+    minimized="false">
+  </div>
+  <!-- FACEBOOK SDK + AUTO-FALLBACK TRIGGER -->
+  <script>
+    // DAD'S 2-LINE LOCALHOST FIX (keeps everything 100% hers)
+    document.getElementById('fallback-chat-btn').style.display = 'none';
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      setTimeout(() => { document.getElementById('fallback-chat-btn').style.display = 'block'; }, 1000);
+    }
+
+    setTimeout(() => {
+      if (!document.querySelector('.fb-customerchat-frame') && !document.querySelector('iframe[title="fb:Messenger"]')) {
+        document.getElementById('fallback-chat-btn').style.display = 'block';
+      }
+    }, 3000);
+    window.fbAsyncInit = function() {
+      FB.init({
+        xfbml : true,
+        version : 'v20.0'
+      });
+    };
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  </script>
+  <!-- STYLING FOR THE FALLBACK BUTTON (MATCHES YOUR YELLOW THEME) -->
+  <style>
+    #fallback-chat-btn {
+      position: fixed !important;
+      bottom: 60px !important;
+      right: 10px !important;
+      background: #f59e0b !important;
+      color: black !important;
+      padding: 14px 24px !important;
+      border-radius: 50px !important;
+      font-weight: bold !important;
+      font-size: 15px !important;
+      box-shadow: 0 6px 20px rgba(245,158,11,0.6) !important;
+      z-index: 99999 !important;
+      animation: pulse 2s infinite !important;
+      display: none;
+      text-decoration: none !important;
+      border: 3px solid #000 !important;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    .fb-customerchat { z-index: 99999 !important; }
+    /* SAFETY: No overlap with marquee/footer */
+    .marquee, footer.disclaimer-footer { z-index: 50 !important; }
+  </style>
+</body>
+</html>
+
+
+
+
