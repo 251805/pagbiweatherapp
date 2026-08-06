@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pagbilao Localized Weather Dashboard</title>
+  <title>Pagbilao Weather Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -29,29 +29,20 @@
     @media (min-width:1024px){body{padding:2rem}}
     .alert-banner{animation:slideDown 0.6s ease-out;}
     @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
-  
-    /* BALANCED FIX: Footer on top, proportional padding for no overlaps */
-    footer.disclaimer-footer { z-index: 50; pointer-events: none; }
-    footer.disclaimer-footer * { pointer-events: auto; }
-    #app { padding-bottom: 16rem; } /* Base for desktop */
-    @media (max-width: 768px) {
-      #app { padding-bottom: 20rem; } /* Extra for mobile proportional scroll */
-      footer.disclaimer-footer { font-size: 0.75rem; padding: 0.5rem; }
-    }
   </style>
 </head>
 <body class="flex flex-col items-center">
  
   
  <!-- App container -->
-  <div id="app" class="w-full max-w-5xl pb-40 pt-24"> <!-- pt-24 to make space for alert -->
+  <div id="app" class="w-full max-w-5xl pb-16 pt-24"> <!-- pt-24 to make space for alert -->
     <!-- Top Header with Active Warning Badge -->
     <div class="card mb-6 p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative">
        <div class="flex items-center gap-4">
         <!--  <img src="https://raw.githubusercontent.com/251805/sirpacheck/main/mdrrmo%20pag.png" alt="MDRRMO Pagbilao Logo" class="w-14 h-14 object-contain"/> -->
         <div class="text-center md:text-left">
           <h1 class="text-2xl md:text-3xl font-extrabold text-gray-800">
-            Pagbilao Quezon <span class="text-blue-600">Localized Weather Dashboard</span>
+            Pagbilao Quezon <span class="text-blue-600">Weather Dashboard</span>
           </h1>
           <div class="small-muted font-medium text-gray-600">
             Municipality of Pagbilao, Quezon — 13.9714°N, 121.6869°E
@@ -231,13 +222,19 @@
     <section class="card mb-6 p-4 md:p-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
         <div>
-          <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <svg class="w-6 h-6 text-red-600 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-            DOST-PAGASA Weather Updates
-          </h2>
-          <p class="text-xs md:text-sm text-gray-500 mt-0.5">Official daily weather briefings and forecasts from DOST-PAGASA</p>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <svg class="w-6 h-6 text-red-600 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              DOST-PAGASA Weather Updates
+            </h2>
+            <span id="pagasa-feed-badge" class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              <span id="pagasa-badge-text">Auto-Syncing RSS...</span>
+            </span>
+          </div>
+          <p class="text-xs md:text-sm text-gray-500 mt-0.5">Live official daily weather briefings automatically fetched via PAGASA RSS feed</p>
         </div>
-        <a href="https://www.youtube.com/@DOSTPAGASAWEATHERREPORT/videos" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+        <a href="https://www.youtube.com/@DOST_PAGASA" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0">
           <span>PAGASA YouTube Channel</span>
           <i data-lucide="external-link" class="w-4 h-4"></i>
         </a>
@@ -259,63 +256,23 @@
           </div>
           <div id="pagasa-active-title" class="font-semibold text-gray-800 text-xs md:text-sm flex items-center gap-2">
             <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-            Press Briefing: Tropical Storm Weather Report & Forecast
+            Loading latest DOST-PAGASA briefing...
           </div>
         </div>
 
         <!-- Video Playlist Cards -->
         <div class="bg-gray-50/80 rounded-xl p-3.5 border border-gray-200 space-y-3">
-          <h3 class="font-bold text-gray-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="tv" class="w-4 h-4 text-blue-600"></i>
-            Recent Weather Reports
-          </h3>
-          <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-            
-            <button onclick="changePagasaVideo('-18Jm6bj0dU', 'Press Briefing: Tropical Storm Weather Report & Forecast', this)" 
-                    class="pagasa-vid-btn active w-full text-left p-2 rounded-lg border border-blue-300 bg-blue-50/90 hover:bg-blue-100/70 transition flex gap-2.5 items-center group">
-              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
-                <img src="https://i.ytimg.com/vi/-18Jm6bj0dU/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
-                <span class="absolute bottom-1 right-1 bg-red-600 text-white text-[9px] font-bold px-1 rounded">LATEST</span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-semibold text-gray-900 line-clamp-2 text-xs leading-snug">Press Briefing: Tropical Storm Report</div>
-                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
-              </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-gray-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="tv" class="w-4 h-4 text-blue-600"></i>
+              Recent Weather Reports
+            </h3>
+            <button onclick="loadPagasaAutoFeed(true)" title="Refresh RSS Feed" class="text-gray-400 hover:text-blue-600 transition">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
             </button>
-
-            <button onclick="changePagasaVideo('b8-Tj4cM6GY', 'Press Briefing: Public Weather Update', this)" 
-                    class="pagasa-vid-btn w-full text-left p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition flex gap-2.5 items-center group">
-              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
-                <img src="https://i.ytimg.com/vi/b8-Tj4cM6GY/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-semibold text-gray-800 line-clamp-2 text-xs leading-snug">Press Briefing: Public Weather Update</div>
-                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
-              </div>
-            </button>
-
-            <button onclick="changePagasaVideo('_qm1yYVFplc', 'Press Briefing: Weather Update & Synopsis', this)" 
-                    class="pagasa-vid-btn w-full text-left p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition flex gap-2.5 items-center group">
-              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
-                <img src="https://i.ytimg.com/vi/_qm1yYVFplc/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-semibold text-gray-800 line-clamp-2 text-xs leading-snug">Press Briefing: Weather Synopsis</div>
-                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
-              </div>
-            </button>
-
-            <button onclick="changePagasaVideo('Tnf4ut6Iuu8', 'Public Weather Forecast - Daily Briefing', this)" 
-                    class="pagasa-vid-btn w-full text-left p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition flex gap-2.5 items-center group">
-              <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
-                <img src="https://i.ytimg.com/vi/Tnf4ut6Iuu8/hqdefault.jpg" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-semibold text-gray-800 line-clamp-2 text-xs leading-snug">Public Weather Forecast - Daily Briefing</div>
-                <div class="text-[11px] text-gray-500 mt-0.5">DOST-PAGASA</div>
-              </div>
-            </button>
-
+          </div>
+          <div id="pagasa-playlist-container" class="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+            <!-- Playlist items will be populated automatically by RSS script -->
           </div>
         </div>
       </div>
@@ -323,22 +280,115 @@
 
     <script>
       function changePagasaVideo(id, title, btn) {
-        const player = document.getElementById('pagasa-main-player');
-        const titleEl = document.getElementById('pagasa-active-title');
+        const player = document.getElementById("pagasa-main-player");
+        const titleEl = document.getElementById("pagasa-active-title");
         if (player) {
-          player.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&rel=0';
+          player.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&rel=0";
         }
         if (titleEl) {
           titleEl.innerHTML = '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> ' + title;
         }
-        document.querySelectorAll('.pagasa-vid-btn').forEach(b => {
-          b.classList.remove('active', 'border-blue-300', 'bg-blue-50/90');
-          b.classList.add('border-gray-200', 'bg-white');
+        document.querySelectorAll(".pagasa-vid-btn").forEach(b => {
+          b.classList.remove("active", "border-blue-300", "bg-blue-50/90");
+          b.classList.add("border-gray-200", "bg-white");
         });
         if (btn) {
-          btn.classList.add('active', 'border-blue-300', 'bg-blue-50/90');
-          btn.classList.remove('border-gray-200', 'bg-white');
+          btn.classList.add("active", "border-blue-300", "bg-blue-50/90");
+          btn.classList.remove("border-gray-200", "bg-white");
         }
+      }
+
+      function cleanTitle(str) {
+        if (!str) return "";
+        const txt = document.createElement("textarea");
+        txt.innerHTML = str;
+        return txt.value.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      }
+
+      function formatPubDate(dateStr) {
+        if (!dateStr) return "DOST-PAGASA";
+        try {
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return "DOST-PAGASA";
+          return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        } catch(e) {
+          return "DOST-PAGASA";
+        }
+      }
+
+      async function loadPagasaAutoFeed(force = false) {
+        const badgeText = document.getElementById("pagasa-badge-text");
+        const container = document.getElementById("pagasa-playlist-container");
+        if (badgeText) badgeText.textContent = "Auto-Syncing RSS...";
+
+        const channelId = "UCpyLikj1x70S8UPxVqsPr6g";
+        const targetRss = "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelId;
+        const proxyUrl = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(targetRss);
+
+        try {
+          const response = await fetch(proxyUrl);
+          const data = await response.json();
+
+          if (data && data.status === "ok" && Array.isArray(data.items) && data.items.length > 0) {
+            const items = data.items;
+            let html = "";
+
+            items.forEach((item, index) => {
+              let videoId = "";
+              if (item.guid && item.guid.includes("v=")) {
+                videoId = item.guid.split("v=")[1];
+              } else if (item.link && item.link.includes("v=")) {
+                videoId = item.link.split("v=")[1];
+              }
+              if (!videoId) return;
+
+              const title = cleanTitle(item.title || "DOST-PAGASA Weather Update");
+              const thumbnail = item.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+              const pubTime = formatPubDate(item.pubDate);
+              const isLatest = index === 0;
+
+              if (index === 0) {
+                const player = document.getElementById("pagasa-main-player");
+                const titleEl = document.getElementById("pagasa-active-title");
+                if (player) player.src = `https://www.youtube.com/embed/${videoId}?rel=0`;
+                if (titleEl) {
+                  titleEl.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> ${title}`;
+                }
+              }
+
+              const safeTitle = title.replace(/["']/g, "");
+
+              html += `
+                <button onclick="changePagasaVideo('${videoId}', '${safeTitle}', this)" 
+                        class="pagasa-vid-btn ${isLatest ? "active border-blue-300 bg-blue-50/90" : "border-gray-200 bg-white"} w-full text-left p-2 rounded-lg border hover:bg-blue-100/70 transition flex gap-2.5 items-center group">
+                  <div class="relative flex-shrink-0 w-24 aspect-video rounded overflow-hidden bg-gray-200 border border-gray-300">
+                    <img src="${thumbnail}" alt="PAGASA Video" class="w-full h-full object-cover group-hover:scale-105 transition" />
+                    ${isLatest ? '<span class="absolute bottom-1 right-1 bg-red-600 text-white text-[9px] font-bold px-1 rounded">LATEST</span>' : ""}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-semibold text-gray-900 line-clamp-2 text-xs leading-snug">${title}</div>
+                    <div class="text-[11px] text-gray-500 mt-0.5">${pubTime} • DOST-PAGASA</div>
+                  </div>
+                </button>
+              `;
+            });
+
+            if (container && html) container.innerHTML = html;
+            if (badgeText) badgeText.textContent = "RSS Live Auto-Updated";
+            if (window.lucide) lucide.createIcons();
+            return;
+          }
+        } catch (err) {
+          console.warn("PAGASA RSS auto-feed fetch failed", err);
+        }
+
+        if (badgeText) badgeText.textContent = "Live Feed";
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => loadPagasaAutoFeed());
+      } else {
+        loadPagasaAutoFeed();
       }
     </script>
     
@@ -379,18 +429,21 @@
         <!-- Populated by JS -->
       </div>
     </section>
+
+    <!-- DISCLAIMER SECTION -->
+    <footer class="mt-8 mb-4 p-4 md:p-6 rounded-2xl border border-amber-200/90 bg-amber-50/70 shadow-sm text-center">
+      <div class="max-w-3xl mx-auto flex flex-col items-center gap-2">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-bold text-xs uppercase tracking-wider border border-amber-300/60">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-amber-700"></i>
+          <span>Disclaimer</span>
+        </div>
+        <p class="text-xs md:text-sm text-gray-700 leading-relaxed font-medium">
+          This weather dashboard is intended for informational purposes only and was developed through the initiative of employee 251805. The data presented are sourced from publicly available online platforms and are synchronized with external APIs every two hours. While efforts are made to ensure accuracy, the information may not always reflect real-time conditions.
+        </p>
+      </div>
+    </footer>
   </div>
-  <!-- UPDATED DISCLAIMER FOOTER -->
-<footer class="disclaimer-footer fixed bottom-10 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-gray-200 shadow-md text-center text-sm text-gray-700 py-4">
-  <div class="flex flex-col items-center justify-center gap-3 px-6 max-w-4xl mx-auto text-center">
-   
-    <div class="leading-relaxed max-w-3xl">
-      <span class="font-semibold">Disclaimer:</span> This weather dashboard is intended for informational purposes only and was developed through the initiative of employee 251805. The data presented are sourced from publicly available online platforms and are synchronized with external APIs every two hours. While efforts are made to ensure accuracy, the information may not always reflect real-time conditions.
-    </div>
-  </div>
-</footer>
-  <!-- Spacer -->
-  <div class="h-32"></div>
+
   <!-- Hotline marquee -->
   <div class="marquee">
     <span>📞 HOTLINES — MDRRMO 09186244564 | 🚒 BUMBERO 09234424945 | 👮 PULIS 09985985764 | 🏛 LGU PAGBILAO (042) 797-0937 | For verified and official updates, please refer to: MDRRMO Pagbilao, Municipality of Pagbilao and PAGASA Official Website.</span>
@@ -705,8 +758,9 @@
   </script>
 
   <!-- FALLBACK CHAT BUTTON (WORKS INSTANTLY EVERYWHERE - EVEN LOCALLY) -->
-  <a href="https://m.me/PagbilaoERT" target="_blank" id="fallback-chat-btn">
-    Chat with MDRRMO ERT
+  <a href="https://m.me/PagbilaoERT" target="_blank" id="fallback-chat-btn" class="inline-flex items-center gap-2">
+    <svg class="w-4 h-4 fill-current text-blue-950" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.145 2 11.258c0 2.91 1.455 5.518 3.734 7.218V22l3.356-1.843c.928.257 1.91.396 2.91.396 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.091 12.427l-2.546-2.714-4.97 2.714 5.467-5.803 2.607 2.714 4.908-2.714-5.466 5.803z"/></svg>
+    <span>Chat with MDRRMO ERT</span>
   </a>
   <!-- OFFICIAL FACEBOOK MESSENGER CUSTOMER CHAT PLUGIN -->
   <div id="fb-root"></div>
@@ -725,12 +779,12 @@
     // DAD'S 2-LINE LOCALHOST FIX (keeps everything 100% hers)
     document.getElementById('fallback-chat-btn').style.display = 'none';
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-      setTimeout(() => { document.getElementById('fallback-chat-btn').style.display = 'block'; }, 1000);
+      setTimeout(() => { document.getElementById('fallback-chat-btn').style.display = 'inline-flex'; }, 1000);
     }
 
     setTimeout(() => {
       if (!document.querySelector('.fb-customerchat-frame') && !document.querySelector('iframe[title="fb:Messenger"]')) {
-        document.getElementById('fallback-chat-btn').style.display = 'block';
+        document.getElementById('fallback-chat-btn').style.display = 'inline-flex';
       }
     }, 3000);
     window.fbAsyncInit = function() {
@@ -751,29 +805,47 @@
   <style>
     #fallback-chat-btn {
       position: fixed !important;
-      bottom: 60px !important;
-      right: 10px !important;
+      bottom: 50px !important;
+      right: 16px !important;
       background: #f59e0b !important;
-      color: black !important;
-      padding: 14px 24px !important;
-      border-radius: 50px !important;
-      font-weight: bold !important;
-      font-size: 15px !important;
-      box-shadow: 0 6px 20px rgba(245,158,11,0.6) !important;
-      z-index: 99999 !important;
-      animation: pulse 2s infinite !important;
+      color: #0f172a !important;
+      padding: 10px 18px !important;
+      border-radius: 9999px !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5), 0 2px 6px rgba(0,0,0,0.15) !important;
+      z-index: 9990 !important;
+      animation: chatPulse 2.5s infinite !important;
       display: none;
+      align-items: center !important;
+      gap: 8px !important;
       text-decoration: none !important;
-      border: 3px solid #000 !important;
+      border: 2px solid #0f172a !important;
+      transition: all 0.2s ease !important;
     }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-      100% { transform: scale(1); }
+    #fallback-chat-btn:hover {
+      transform: translateY(-2px) scale(1.03) !important;
+      background: #d97706 !important;
+      color: #ffffff !important;
     }
-    .fb-customerchat { z-index: 99999 !important; }
-    /* SAFETY: No overlap with marquee/footer */
-    .marquee, footer.disclaimer-footer { z-index: 50 !important; }
+    @keyframes chatPulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .fb-customerchat { z-index: 9990 !important; }
+    .fb-customerchat iframe {
+      bottom: 50px !important;
+    }
+    @media (max-width: 640px) {
+      #fallback-chat-btn {
+        bottom: 46px !important;
+        right: 10px !important;
+        padding: 8px 14px !important;
+        font-size: 12px !important;
+      }
+    }
+    .marquee { z-index: 9999 !important; }
   </style>
 </body>
 </html>
