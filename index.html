@@ -34,7 +34,7 @@
 <body class="flex flex-col items-center">
  
   
- <!-- App container -->
+  <!-- App container -->
   <div id="app" class="w-full max-w-5xl pb-16 pt-24"> <!-- pt-24 to make space for alert -->
     <!-- Top Header with Active Warning Badge -->
     <div class="card mb-6 p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative">
@@ -59,6 +59,37 @@
         </div>
       </div>
     </div>
+
+    <!-- Time of Day Synopses (Morning / Afternoon / Night) -->
+    <div id="synopsis-card" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      <!-- Morning -->
+      <div class="p-3.5 rounded-xl bg-white border border-amber-200/80 shadow-sm">
+        <div class="flex items-center gap-2 mb-1.5 text-amber-700 font-bold text-sm">
+          <i data-lucide="sunrise" class="w-4 h-4 text-amber-500"></i>
+          <span>🌅 Morning Synopsis (06:00 - 11:00)</span>
+        </div>
+        <p id="synopsis-morning" class="text-xs md:text-sm text-gray-700 leading-relaxed font-medium">Fetching live morning weather telemetry...</p>
+      </div>
+
+      <!-- Afternoon -->
+      <div class="p-3.5 rounded-xl bg-white border border-orange-200/80 shadow-sm">
+        <div class="flex items-center gap-2 mb-1.5 text-orange-700 font-bold text-sm">
+          <i data-lucide="sun" class="w-4 h-4 text-orange-500"></i>
+          <span>☀️ Afternoon Synopsis (12:00 - 17:00)</span>
+        </div>
+        <p id="synopsis-afternoon" class="text-xs md:text-sm text-gray-700 leading-relaxed font-medium">Fetching live afternoon weather telemetry...</p>
+      </div>
+
+      <!-- Night -->
+      <div class="p-3.5 rounded-xl bg-white border border-indigo-200/80 shadow-sm">
+        <div class="flex items-center gap-2 mb-1.5 text-indigo-800 font-bold text-sm">
+          <i data-lucide="moon" class="w-4 h-4 text-indigo-500"></i>
+          <span>🌙 Night Synopsis (18:00 - 23:00)</span>
+        </div>
+        <p id="synopsis-night" class="text-xs md:text-sm text-gray-700 leading-relaxed font-medium">Fetching live night weather telemetry...</p>
+      </div>
+    </div>
+
     <!-- Current conditions + hourly -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <section id="current-panel" class="card p-4">
@@ -86,15 +117,15 @@
     </div>
     <!-- Tide Data -->
     <div class="card mb-6 p-4">
-      <header class="flex items-center justify-between mb-4">
+      <header class="mb-4">
         <div>
           <h2 class="text-2xl font-bold">Pagbilao High and Low <span style="color:var(--coastal)">Tide Data</span></h2>
-          <div class="small-muted">Tides, sunrise and sunset</div>
-        </div>
-        <div class="mt-3 space-y-1 text-center">
-          <a href="https://www.tide-forecast.com/locations/Pagbilao/tides/latest" target="_blank" class="font-bold text-blue-600 underline hover:text-blue-800">
-            🌊 Tides full data 🌊
-          </a>
+          <div class="mt-1">
+            <a href="https://www.tide-forecast.com/locations/Pagbilao/tides/latest" target="_blank" class="font-bold text-blue-600 underline hover:text-blue-800 inline-flex items-center gap-1">
+              <span>🌊 Tides full data 🌊</span>
+            </a>
+          </div>
+          <div class="small-muted mt-0.5">Tides, sunrise and sunset</div>
         </div>
       </header>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -149,9 +180,15 @@
               </select>
             </label>
           </div>
-          <div class="mt-3 space-y-1">
-            <a href="https://www.pagasa.dost.gov.ph/weather/weather-advisory" target="_blank" class="text-blue-600 underline"> 📢PAGASA Weather Advisory</a><br>
-            <a href="https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin/1" target="_blank" class="text-red-600 underline">📢PAGASA Severe Weather Bulletin</a>
+          <div class="mt-3 flex flex-col gap-1.5">
+            <a href="https://www.pagasa.dost.gov.ph/weather/weather-advisory" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+              <span>📢 PAGASA Weather Advisory</span>
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+            <a href="https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin/1" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+              <span>📢 PAGASA Severe Weather Bulletin</span>
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
           </div>
           <div id="timethumbs" class="flex flex-wrap gap-2 justify-center mt-3"></div>
         </div>
@@ -238,12 +275,13 @@
               <span id="pagasa-badge-text">Auto-Syncing RSS...</span>
             </span>
           </div>
-          <p class="text-xs md:text-sm text-gray-500 mt-0.5">Live official daily weather briefings automatically fetched via PAGASA RSS feed</p>
+          <div class="mt-1">
+            <a href="https://www.youtube.com/@DOST_PAGASA" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+              <span>PAGASA YouTube Channel</span>
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+          </div>
         </div>
-        <a href="https://www.youtube.com/@DOST_PAGASA" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0">
-          <span>PAGASA YouTube Channel</span>
-          <i data-lucide="external-link" class="w-4 h-4"></i>
-        </a>
       </div>
 
       <!-- Video Player & Selector Grid -->
@@ -298,22 +336,23 @@
               Live Official Feed
             </span>
           </div>
-          <p class="text-xs md:text-sm text-gray-500 mt-0.5">Real-time provincial weather advisories Provincial Disaster Risk Reduction and Management Office (PDRRMO) Quezon</p>
+          <div class="mt-1">
+            <a href="https://www.facebook.com/PDRRMOQuezon" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+              <span>PDRRMO Facebook Page</span>
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+          </div>
         </div>
-        <a href="https://www.facebook.com/PDRRMOQuezon" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0">
-          <span>PDRRMO Facebook Page</span>
-          <i data-lucide="external-link" class="w-4 h-4"></i>
-        </a>
       </div>
 
       <div id="fb-pdrrmo-container" class="flex justify-center w-full bg-gray-50/60 p-1.5 sm:p-3 md:p-4 rounded-xl border border-gray-200">
-        <div class="w-full max-w-[500px] overflow-hidden rounded-lg shadow-sm border border-gray-200 bg-white min-h-[500px] flex justify-center">
+        <div class="w-full max-w-[500px] h-[800px] overflow-hidden rounded-lg shadow-sm border border-gray-200 bg-white flex justify-center relative">
           <iframe 
             id="fb-pdrrmo-iframe"
-            src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPDRRMOQuezon&tabs=timeline&width=340&height=550&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false" 
+            src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPDRRMOQuezon&tabs=timeline&width=340&height=875&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false" 
             width="100%" 
-            height="550" 
-            style="border:none;overflow:hidden;max-width:100%;" 
+            height="875" 
+            style="border:none;overflow:hidden;max-width:100%;margin-top:-72px;" 
             scrolling="no" 
             frameborder="0" 
             allowfullscreen="true" 
@@ -332,9 +371,8 @@
 
         const containerWidth = container.clientWidth - 12;
         const targetWidth = Math.max(280, Math.min(500, Math.floor(containerWidth)));
-        const isSmall = targetWidth < 400;
 
-        const newSrc = `https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPDRRMOQuezon&tabs=timeline&width=${targetWidth}&height=550&small_header=${isSmall}&adapt_container_width=true&hide_cover=false&show_facepile=${!isSmall}`;
+        const newSrc = `https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPDRRMOQuezon&tabs=timeline&width=${targetWidth}&height=875&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false`;
 
         if (iframe.getAttribute('data-loaded-width') !== String(targetWidth)) {
           iframe.setAttribute('data-loaded-width', String(targetWidth));
@@ -502,12 +540,12 @@
   </div>
 
   <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
-    <span class="text-sm text-gray-600 font-medium">Interactive Satellite View</span>
+    <span class="text-sm text-gray-600 font-medium"> </span>
     <a href="https://earth.google.com/web/@13.97218696,121.68620346,25.23086188a,4425.05429031d,35y,340.31221949h,60t,0r/data=CgRCAggBKAI6AwoBMEICCABKDQj___________8BEAA" 
        target="_blank" 
        rel="noopener" 
        class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition">
-      🌍 Open 3D View in Google Earth
+      🌍 Open in Google Map
     </a>
   </div>
 </div>
@@ -897,6 +935,82 @@
         barangayGrid.appendChild(card);
       }
     }
+    async function loadWeatherSynopsis() {
+      const morningEl = document.getElementById('synopsis-morning');
+      const afternoonEl = document.getElementById('synopsis-afternoon');
+      const nightEl = document.getElementById('synopsis-night');
+      const badgeText = document.getElementById('synopsis-badge-text');
+
+      if (badgeText) badgeText.textContent = "Fetching live telemetry...";
+
+      try {
+        const res = await fetch('/api/weather-synopsis');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.synopsis) {
+            if (morningEl) morningEl.textContent = data.synopsis.morning;
+            if (afternoonEl) afternoonEl.textContent = data.synopsis.afternoon;
+            if (nightEl) nightEl.textContent = data.synopsis.night;
+
+            if (data.zones) {
+              const zc = data.zones.coastal;
+              if (zc) {
+                const elTemp = document.getElementById('zc-temp');
+                const elWind = document.getElementById('zc-wind');
+                const elRain = document.getElementById('zc-rain');
+                const elHumid = document.getElementById('zc-humid');
+                const elSum = document.getElementById('zone-coastal-summary');
+                if (elTemp) elTemp.textContent = zc.temp;
+                if (elWind) elWind.textContent = zc.wind;
+                if (elRain) elRain.textContent = zc.rain;
+                if (elHumid) elHumid.textContent = zc.humidity;
+                if (elSum) elSum.textContent = zc.summary;
+              }
+
+              const zp = data.zones.plains;
+              if (zp) {
+                const elTemp = document.getElementById('zp-temp');
+                const elWind = document.getElementById('zp-wind');
+                const elRain = document.getElementById('zp-rain');
+                const elHumid = document.getElementById('zp-humid');
+                const elSum = document.getElementById('zone-plains-summary');
+                if (elTemp) elTemp.textContent = zp.temp;
+                if (elWind) elWind.textContent = zp.wind;
+                if (elRain) elRain.textContent = zp.rain;
+                if (elHumid) elHumid.textContent = zp.humidity;
+                if (elSum) elSum.textContent = zp.summary;
+              }
+
+              const zh = data.zones.highlands;
+              if (zh) {
+                const elTemp = document.getElementById('zh-temp');
+                const elWind = document.getElementById('zh-wind');
+                const elRain = document.getElementById('zh-rain');
+                const elHumid = document.getElementById('zh-humid');
+                const elSum = document.getElementById('zone-highlands-summary');
+                if (elTemp) elTemp.textContent = zh.temp;
+                if (elWind) elWind.textContent = zh.wind;
+                if (elRain) elRain.textContent = zh.rain;
+                if (elHumid) elHumid.textContent = zh.humidity;
+                if (elSum) elSum.textContent = zh.summary;
+              }
+            }
+
+            if (badgeText) {
+              badgeText.textContent = data.aiGenerated ? "Live AI Synopsis (Gemini)" : "Live Telemetry (Open-Meteo)";
+            }
+            if (window.lucide) lucide.createIcons();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load live weather synopsis:", err);
+      }
+
+      if (badgeText) badgeText.textContent = "Live Telemetry Active";
+    }
+    window.loadWeatherSynopsis = loadWeatherSynopsis;
+
     // Auto-show fraud warning once per session
     if(!sessionStorage.getItem('fraudSeen')) {
       setTimeout(() => {
@@ -917,10 +1031,12 @@
     }, 30000);
     // Init
     (async function init(){
+      await loadWeatherSynopsis();
       await refreshWeather();
       await refreshSatellite();
       await renderBarangays();
       lucide.createIcons();
+      setInterval(loadWeatherSynopsis, WEATHER_UPDATE_MS);
       setInterval(refreshWeather, WEATHER_UPDATE_MS);
       setInterval(refreshSatellite, SAT_UPDATE_MS);
       setInterval(()=>{document.getElementById('local-time').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});},60000);
