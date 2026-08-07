@@ -71,9 +71,15 @@
         <div class="mt-4 small-muted"><strong>UV Max:</strong> <span id="uv-max">—</span></div>
       </section>
       <section class="card p-4">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 icon-yellow"></i> Hourly (next 24h) 🌡️Temp | 🌧️Rain Chance |☁️Cloud Cover|🌬️Wind|💧Humidity</h2>
-          <div class="small-muted">Updated every 2 hours</div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <i data-lucide="clock" class="w-5 h-5 icon-yellow"></i>
+              Hourly Forecast (Next 24h)
+            </h2>
+            <p class="text-xs text-gray-500 font-medium mt-0.5">🌡️ Temp · 🌧️ Rain Chance · ☁️ Cloud Cover · 🌬️ Wind · 💧 Humidity</p>
+          </div>
+          <div class="small-muted shrink-0 text-xs">Updated every 2h</div>
         </div>
         <div id="hourly-forecast" class="flex overflow-x-auto hourly-scroll gap-3 pb-3"></div>
       </section>
@@ -133,11 +139,11 @@
         <div id="satellite" class="text-center">
           <img id="sat-main" src="" alt="Satellite" class="mx-auto rounded-lg shadow-md w-full max-w-[480px]"/>
           <div id="sat-msg" class="small-muted mt-2">Loading satellite...</div>
-          <div class="flex items-center justify-center gap-2 mt-4">
-            <button id="sat-play" class="px-3 py-2 rounded-md bg-yellow-400 font-semibold">Play</button>
-            <button id="sat-pause" class="px-3 py-2 rounded-md bg-gray-200">Pause</button>
-            <label class="small-muted">Speed:
-              <select id="sat-speed" class="ml-2 border rounded px-2 py-1">
+          <div class="flex items-center justify-center gap-2 mt-4 flex-wrap">
+            <button id="sat-play" class="px-3.5 py-1.5 rounded-md bg-yellow-400 font-semibold text-xs md:text-sm">Play</button>
+            <button id="sat-pause" class="px-3.5 py-1.5 rounded-md bg-gray-200 text-xs md:text-sm">Pause</button>
+            <label class="small-muted text-xs md:text-sm flex items-center">Speed:
+              <select id="sat-speed" class="ml-1.5 border rounded px-2 py-1 text-xs md:text-sm bg-white">
                 <option value="800">1x (0.8s)</option>
                 <option value="120">3x (0.3s)</option>
               </select>
@@ -277,6 +283,77 @@
         </div>
       </div>
     </section>
+
+    <!-- PDRRMO Quezon Official Facebook Updates Section -->
+    <section class="card mb-6 p-4 md:p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
+        <div>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h2 class="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <svg class="w-6 h-6 text-blue-600 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              PDRRMO Quezon Official Facebook Feed
+            </h2>
+            <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+              <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              Live Official Feed
+            </span>
+          </div>
+          <p class="text-xs md:text-sm text-gray-500 mt-0.5">Real-time provincial weather advisories Provincial Disaster Risk Reduction and Management Office (PDRRMO) Quezon</p>
+        </div>
+        <a href="https://www.facebook.com/PDRRMOQuezon" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0">
+          <span>PDRRMO Facebook Page</span>
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+        </a>
+      </div>
+
+      <div id="fb-pdrrmo-container" class="flex justify-center w-full bg-gray-50/60 p-1.5 sm:p-3 md:p-4 rounded-xl border border-gray-200">
+        <div class="w-full max-w-[500px] overflow-hidden rounded-lg shadow-sm border border-gray-200 bg-white min-h-[500px] flex justify-center">
+          <iframe 
+            id="fb-pdrrmo-iframe"
+            src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPDRRMOQuezon&tabs=timeline&width=340&height=550&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false" 
+            width="100%" 
+            height="550" 
+            style="border:none;overflow:hidden;max-width:100%;" 
+            scrolling="no" 
+            frameborder="0" 
+            allowfullscreen="true" 
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+          </iframe>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      function loadResponsiveFbPlugin() {
+        const container = document.getElementById('fb-pdrrmo-container');
+        const iframe = document.getElementById('fb-pdrrmo-iframe');
+        if (!container || !iframe) return;
+
+        const containerWidth = container.clientWidth - 12;
+        const targetWidth = Math.max(280, Math.min(500, Math.floor(containerWidth)));
+        const isSmall = targetWidth < 400;
+
+        const newSrc = `https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2FPDRRMOQuezon&tabs=timeline&width=${targetWidth}&height=550&small_header=${isSmall}&adapt_container_width=true&hide_cover=false&show_facepile=${!isSmall}`;
+
+        if (iframe.getAttribute('data-loaded-width') !== String(targetWidth)) {
+          iframe.setAttribute('data-loaded-width', String(targetWidth));
+          iframe.src = newSrc;
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadResponsiveFbPlugin);
+      } else {
+        loadResponsiveFbPlugin();
+      }
+
+      let fbResizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(fbResizeTimer);
+        fbResizeTimer = setTimeout(loadResponsiveFbPlugin, 250);
+      });
+    </script>
 
     <script>
       function changePagasaVideo(id, title, btn) {
