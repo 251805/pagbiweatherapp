@@ -1,0 +1,127 @@
+
+Result Size: 912 x 896
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8" />
+
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <title>Pagbilao Localized Weather Dashboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+
+    :root{
+
+      --primary:#f59e0b;
+
+      --bg:#f8fafc;
+
+      --coastal:#f59e0b;
+
+      --warning:#dc2626;
+
+    }
+
+    html,body{height:100%}
+
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue";background:var(--bg);padding:1rem;-webkit-font-smoothing:antialiased;}
+
+    .card{background:white;border-radius:1rem;box-shadow:0 8px 28px rgba(15,23,42,0.06);padding:1rem;}
+
+    .icon-yellow{color:var(--primary)}
+
+    .marquee{background:var(--coastal);color:#080808;padding:10px;font-weight:700;position:fixed;left:0;right:0;bottom:0;z-index:60;}
+
+    .marquee span{display:inline-block;white-space:nowrap;animation:marquee 22s linear infinite;}
+
+    @keyframes marquee{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+
+    .hourly-scroll::-webkit-scrollbar{height:6px}
+
+    .hourly-scroll::-webkit-scrollbar-thumb{background:var(--primary);border-radius:4px}
+
+    .sat-thumb.selected{border:3px solid var(--coastal);opacity:1;}
+
+    .sat-thumb{opacity:0.75;cursor:pointer;transition:all .15s}
+
+    .kv{font-weight:700;font-size:1.25rem;}
+
+    .small-muted{color:#6b7280;font-size:.85rem;}
+
+    @media (min-width:1024px){body{padding:2rem}}
+
+    .alert-banner{animation:slideDown 0.6s ease-out;}
+
+    @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+
+  </style>
+
+</head>
+
+<body class="flex flex-col items-center">
+
+ 
+
+  
+
+  <!-- App container -->
+
+  <div id="app" class="w-full max-w-5xl pb-16 pt-24"> <!-- pt-24 to make space for alert -->
+
+    <!-- Top Header with Active Warning Badge -->
+
+    <div class="card mb-6 p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative">
+
+       <div class="flex items-center gap-4">
+
+        <!--  <img src="https://raw.githubusercontent.com/251805/sirpacheck/main/mdrrmo%20pag.png" alt="MDRRMO Pagbilao Logo" class="w-14 h-14 object-contain"/> -->
+
+        <div class="text-center md:text-left">
+
+          <h1 class="text-2xl md:text-3xl font-extrabold text-gray-800">
+
+            Pagbilao Quezon <span class="text-blue-600">Weather Dashboard</span>
+
+          </h1>
+
+          <div class="small-muted font-medium text-gray-600">
+
+            Municipality of Pagbilao, Quezon — 13.9714°N, 121.6869°E
+
+          </div>
+
+        </div>
+
+        <!-- <img src="https://raw.githubusercontent.com/251805/sirpacheck/main/pag%20logo.png" alt="Pagbilao Municipal Logo" class="w-14 h-14 object-contain"/> -->
+
+      </div>
+
+      <div class="text-center md:text-right small-muted">
+
+        <div class="font-semibold text-gray-700">Sources:</div>
+
+        <div>PAGASA · Windy · Open-Meteo</div>
+
+        <div id="last-updated" class="text-sm mt-1 italic">Updated: —</div>
+
+        <div class="mt-2">
+
+         
+
+        </div>
+
+      </div>
+
+    </div>
+
+​
+
